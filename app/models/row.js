@@ -13,8 +13,6 @@ export default DS.Model.extend({
   variablename: DS.attr('string'),
   dataset: DS.attr('string'), // year
   year: DS.attr('string'), // year
-  codingThresholds: DS.attr(),
-  is_most_recent: DS.attr('boolean'),
 
   /*
     One of:
@@ -34,12 +32,15 @@ export default DS.Model.extend({
   previous_cv: DS.attr('number'), // previous year coefficient of variation
   previous_percent: DS.attr('number'), // previous year percentage
   previous_percent_m: DS.attr('number'), // previous year percentage margin of error
+  previous_codingThreshold: DS.attr('string'),
+  previous_is_reliable: DS.attr('string'),
 
   sum: DS.attr('number'), // census/ACS estimate
   m: DS.attr('number'), // moe (margin of error)
   cv: DS.attr('number'), // coefficient of variation
   percent: DS.attr('number'),
   percent_m: DS.attr('number'), // percentage margin of error
+  codingThreshold: DS.attr('string'),
   is_reliable: DS.attr('boolean'), // whether data is reliable
 
   // change refers to changes in values from previous year (ACS y2006-2010) to current year (ACS y2012-2016) (current year - previous year = change)
@@ -59,11 +60,13 @@ export default DS.Model.extend({
   comparison_cv: DS.attr('number'), // coefficient of variation of comparison area
   comparison_percent: DS.attr('number'), // percentage of comparison area
   comparison_percent_m: DS.attr('number'), // percentage margin of error of comparison area
+  comparison_codingThreshold: DS.attr('string'),
   comparison_is_reliable: DS.attr('boolean'), // whether comparison area data is reliable
 
   // difference refers to the differnce in values between the chosen area and the comparison area (Flushing - Queens = difference)
   difference_sum: DS.attr('number'),
   difference_m: DS.attr('number'),
+  difference_codingThreshold: DS.attr('string'),
   // "significant" belongs to "difference"
   significant: DS.attr('boolean'), // !!! this variables now reflect reliability (calculations were changed in the API but variable names have not been updated, check issue #57)
   difference_percent: DS.attr('number'),
@@ -107,23 +110,38 @@ export default DS.Model.extend({
   // these are used to group together similar type columns
   // into normalized mappings for components
   // These are used in the column groups
-  selection: computed('sum', 'm', 'cv', 'percent', 'percent_m', 'is_reliable', 'codingThresholds.sum', function() {
-    const {
-      sum,
-      m: moe,
-      cv,
-      percent,
-      percent_m,
-      is_reliable,
-      codingThresholds,
-    } = this.getProperties('sum', 'm', 'cv', 'percent', 'percent_m', 'is_reliable', 'codingThresholds');
+  selection: computed(
+    'sum',
+    'm',
+    'cv',
+    'percent',
+    'percent_m',
+    'is_reliable',
+    'codingThreshold',
+    function() {
+      const {
+        sum,
+        m: moe,
+        cv,
+        percent,
+        percent_m,
+        is_reliable,
+        codingThreshold: direction,
+      } = this.getProperties(
+        'sum',
+        'm',
+        'cv',
+        'percent',
+        'percent_m',
+        'is_reliable',
+        'codingThreshold',
+      );
 
-    const { sum: direction } = codingThresholds;
-
-    return {
-      sum, moe, cv, percent, percent_m, is_reliable, direction,
-    };
-  }),
+      return {
+        sum, moe, cv, percent, percent_m, is_reliable, direction,
+      };
+    },
+  ),
 
   comparison: computed(
     'comparison_sum',
@@ -132,7 +150,7 @@ export default DS.Model.extend({
     'comparison_percent',
     'comparison_percent_m',
     'comparison_is_reliable',
-    'codingThresholds.comparison_sum',
+    'codingThreshold',
     function() {
       const {
         comparison_sum: sum,
@@ -141,7 +159,7 @@ export default DS.Model.extend({
         comparison_percent: percent,
         comparison_percent_m: percent_m,
         comparison_is_reliable: is_reliable,
-        'codingThresholds.comparison_sum': direction,
+        codingThreshold: direction,
       } = this.getProperties(
         'comparison_sum',
         'comparison_m',
@@ -149,7 +167,40 @@ export default DS.Model.extend({
         'comparison_percent',
         'comparison_percent_m',
         'comparison_is_reliable',
-        'codingThresholds.comparison_sum',
+        'comparison_codingThreshold',
+      );
+
+      return {
+        sum, moe, cv, percent, percent_m, is_reliable, direction,
+      };
+    },
+  ),
+
+  previous: computed(
+    'previous_sum',
+    'previous_m',
+    'previous_cv',
+    'previous_percent',
+    'previous_percent_m',
+    'previous_is_reliable',
+    'previous_codingThreshold',
+    function() {
+      const {
+        previous_sum: sum,
+        previous_m: moe,
+        previous_cv: cv,
+        previous_percent: percent,
+        previous_percent_m: percent_m,
+        previous_is_reliable: is_reliable,
+        previous_codingThreshold: direction,
+      } = this.getProperties(
+        'previous_sum',
+        'previous_m',
+        'previous_cv',
+        'previous_percent',
+        'previous_percent_m',
+        'previous_is_reliable',
+        'previous_codingThreshold',
       );
 
       return {
@@ -165,23 +216,6 @@ export default DS.Model.extend({
   }),
 
   rowConfig: DS.attr(),
-  // @computed('profile', 'category', 'variable', 'notinprofile')
-  // rowConfig(profile, category, variableName, notinprofile) {
-  //   if (notinprofile) return {};
-
-  //   const categoryNormalized = category.camelize();
-  //   const variables = get(tableConfigs, `${profile}.${categoryNormalized}`) || [];
-  //   const foundVariable = variables.findBy('data', variableName);
-
-  //   if (!foundVariable && (profile !== 'decennial')) {
-  //     Logger.warn(`Row configuration not found for ${profile}, ${category}, ${variableName}.
-  //       Data may be misnamed in the layer-groups.
-  //       Please make sure profile, category, and variable names
-  //       are consistent in the database, and re-index.`);
-  //   }
-
-  //   return foundVariable;
-  // },
 
   special: DS.attr('boolean'),
   isSpecial: alias('special'),

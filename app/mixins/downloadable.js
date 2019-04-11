@@ -17,7 +17,7 @@ export default Mixin.create({
   setupController(controller, model) {
     this._super(controller, model);
 
-    const nestedModel = nestProfile(model, 'dataset', 'variable');
+    const nestedModel = nestProfile(model, 'variable');
 
     controller.setProperties({
       model: nestedModel,
